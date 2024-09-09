@@ -9,3 +9,13 @@ pub fn print_hello()
         print!("{}", element); 
     }
 }
+
+pub fn encrypt()
+{
+
+}
+
+pub fn decrypt()
+{
+    
+}

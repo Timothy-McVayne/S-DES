@@ -1,34 +1,40 @@
 mod functions; 
 
-use bitvec::vec::BitVec;
-use std::fs::{self, File};
+use std::fs;
+use std::fs::File;
 use std::io::Read;
-use std::io;
-use std::string::String; 
 fn main() {
 
-    let mut file = File::open("test.txt").expect("Can't open file");
-    let metadata = fs::metadata("test.txt").expect("Can't read metadata"); 
-    
-    let mut buffer = vec![0; metadata.len() as usize];
-    file.read(&mut buffer).expect("buffer overflow");
+    let mut file = File::open("card.jpg").expect("Can't open file");
+    let metadata = file.metadata().expect("Can't read metadata");
+    let mut buffer: Vec<u8> = vec![0; metadata.len() as usize];
+    file.read(&mut buffer).expect("Can't read file");
+    let mut cipher_text: Vec<u8> = Vec::new();
+    //let mut arr: [u8; 8] = [1, 5, 2, 0, 3, 7, 4, 6];
+    for bytes in &buffer
+    {
+        cipher_text.push(*bytes);
+        print!("{}", bytes); 
+    }
 
-    //let mut value = buffer[0];
-    let mut value: u8 = 0b10110010;
-    let mut rearranged: u8 = 0; 
+    println!(""); 
 
-    println!("{:08b}", value); 
+    if cipher_text == buffer
+    {
+        println!("Equal");
+        fs::write("cipher.jpg", cipher_text).unwrap();
+    }
 
-    let mut arr = [1, 5, 2, 0, 3, 7, 4, 6]; 
+    /*println!("Plaintext is: {:08b}", value);  
 
     for i in 0..8 
     {
         rearranged |= ((value >> (8 - arr[i] - 1)) & 1) << ((arr.len() - 1) - i);
     };
 
-    println!("{:08b}", rearranged);
+    println!("Ciphertext after IP is: {:08b}", rearranged);*/
 
-    functions::print_hello(); 
+    //functions::print_hello(); 
     
     /*let mut i = 0; 
     while i < buffer.len()
