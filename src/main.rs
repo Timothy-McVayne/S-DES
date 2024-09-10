@@ -2,10 +2,28 @@ mod functions;
 
 use std::fs;
 use std::fs::File;
-use std::io::Read;
+use std::io::{stdout, Read};
+use std::io::{self, Write};
+
+use functions::generateKeys;
 fn main() {
 
-    let mut file = File::open("card.jpg").expect("Can't open file");
+    /*
+    Loop beginning until done
+    Ask if user wants to encrypt or decrypt
+    Ask user where file holding key is
+    pull key from file FUNCTION
+    begin encryption/decryption process FUNCTION
+    message that action has been taken and where to find new file. END LOOP
+     */
+    let mut path = String::new();
+    println!("Please enter the name of the file with the key: ");
+    io::stdout().flush().unwrap();
+    io::stdin().read_line(&mut path).expect("Couldn't read line");
+    generateKeys(&mut path); 
+
+
+    let mut file = File::open("test.txt").expect("Can't open file");
     let metadata = file.metadata().expect("Can't read metadata");
     let mut buffer: Vec<u8> = vec![0; metadata.len() as usize];
     file.read(&mut buffer).expect("Can't read file");
@@ -22,7 +40,7 @@ fn main() {
     if cipher_text == buffer
     {
         println!("Equal");
-        fs::write("cipher.jpg", cipher_text).unwrap();
+        fs::write("cipher.txt", cipher_text).unwrap();
     }
 
     /*println!("Plaintext is: {:08b}", value);  
