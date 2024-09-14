@@ -6,6 +6,7 @@ use std::io::{stdout, Read};
 use std::io::{self, Write};
 
 const IP: [u8; 8] = [1, 5, 2, 0, 3, 7, 4, 6];
+const KEYORD: [u8; 10] = [2, 4, 1, 6, 3, 9, 0, 8, 7, 5]; 
 
 use functions::{generateKeys, permute};
 fn main() {
@@ -22,11 +23,7 @@ fn main() {
     println!("Please enter the name of the file with the key: ");
     io::stdout().flush().unwrap();
     io::stdin().read_line(&mut path).expect("Couldn't read line");
-    //generateKeys(&mut path); 
-    let value8: u8 = 0b10001000;
-    let value16: u16 = 0b1010000010;
-    permute(value8, &IP, 10);
-    //permute(value16, IP);
+    generateKeys(&mut path); 
 
     /*let mut file = File::open("test.txt").expect("Can't open file");
     let metadata = file.metadata().expect("Can't read metadata");
