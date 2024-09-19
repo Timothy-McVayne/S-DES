@@ -3,8 +3,19 @@ use std::fs::File;
 use std::io::Read; 
 
 const IP: [u8; 8] = [1, 5, 2, 0, 3, 7, 4, 6];
+const EP: [u8; 8] = [7, 4, 5, 6, 5, 6, 7, 4];
 const KEYORD10: [u8; 10] = [2, 4, 1, 6, 3, 9, 0, 8, 7, 5]; 
 const KEYORD8: [u8; 8] = [3, 0, 4, 1, 5, 2, 7, 6]; 
+
+const S0: [u8; 16] = [1, 0, 3, 2,
+                      3, 2, 1, 0,
+                      0, 2, 1, 3,
+                      3, 1, 3, 2];
+
+const S1: [u8; 16] = [0, 1, 2, 3,
+                      2, 0, 1, 3,
+                      3, 0, 1, 0,
+                      2, 1, 0, 3];
 
 pub fn permute<T: Into<u16>>(value: T, order: &[u8], length: usize) -> u16
 {
@@ -60,10 +71,13 @@ pub fn encrypt(plain: &str, key: &str)
         cipher_text.push(*bytes);
     }
 
-    for element in &mut cipher_text
+    /*for element in &mut cipher_text
     {
         encrypt_loop(*element, k1, k2); 
     }
+    */
+    let data = 0b10010111; 
+    encrypt_loop(data, k1, k2);
     //fs::write("cipher.txt", cipher_text).unwrap();
 }
 
@@ -74,15 +88,37 @@ pub fn decrypt()
 
 fn encrypt_loop(data: u8, k1: u8, k2: u8)
 {
+    //let permuted = permute(data, &IP, IP.len()) as u8;
 
-    println!("data: {:08b}", data);
-    println!("K1: {:08b}", k1); 
-    println!("K2: {:08b}", k2); 
+    //let left = (permuted >> 4) & 0b00001111; 
+    //let right = permuted & 0b00001111;
+
+    let left: u8 = 0b0101;
+    let right: u8 = 0b1101;
+
+    //println!("Permuted: {:08b}", permuted);
+
+    let expright = permute(right, &EP, EP.len()) as u8;
+
+    let XORright = k1 ^ expright; 
+
+    let XORleft = (XORright >> 4) & 0b00001111; 
+    let XORright = XORright & 0b00001111;
+
+    let lrow = (((XORleft >> 2) & 0b00000010) | XORleft) & 0b000000011;
+    let lcol = (((XORleft >> 1) & 0b00000010) | ((XORleft >> 1) & 0b00000001)) & 0b000000011;
+
+    let rrow = (((XORright >> 2) & 0b00000010) | XORright) & 0b000000011;
+    let rcol = (((XORright >> 1) & 0b00000010) | ((XORright >> 1) & 0b00000001)) & 0b000000011;
+
+    let s0val = S0[(lcol + 4 * lrow) as usize]; 
+    let s1val = S1[(rcol + 4 * rrow) as usize]; 
+    let sval = (s0val << 2 | s1val) & 0b00001111; 
+    println!("Extracted from S0: {:04b}", s0val);
+    println!("Extracted from S1: {:04b}", s1val);
+    println!("First Sbox: {:08b}", sval); 
 
         /*
-    Initial permutation FUNCTION
-
-    Expanded permutation converts 4 bit input to 8 bit output
 
     S-boxes?
 
