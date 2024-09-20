@@ -19,7 +19,7 @@ const S1: [u8; 16] = [0, 1, 2, 3,
                       3, 0, 1, 0,
                       2, 1, 0, 3];
 
-pub fn permute<T: Into<u16>>(value: T, order: &[u8], length: usize) -> u16
+fn permute<T: Into<u16>>(value: T, order: &[u8], length: usize) -> u16
 {
     let value: u16 = value.into();
     let mut rearranged: u16 = 0b0000000000000000; 
@@ -31,11 +31,11 @@ pub fn permute<T: Into<u16>>(value: T, order: &[u8], length: usize) -> u16
     return rearranged;
 }
 
-pub fn generate_keys(path: &str) -> (u8, u8)
+fn generate_keys(path: &str) -> (u8, u8)
 {
     //Key at key.txt is 1010000010
     let path = path.trim(); 
-    let key = fs::read_to_string(path).expect("Can't read file");
+    let key = fs::read_to_string(path).expect("Key file not found!");
     let parsed_key = u16::from_str_radix(&key, 2).expect("Invalid"); 
 
     let permuted = permute(parsed_key, &KEYORD10, KEYORD10.len());
@@ -63,7 +63,7 @@ pub fn encrypt(plain: &str, key: &str)
 {
     let (k1, k2) = generate_keys(key); 
 
-    let mut file = File::open(plain).expect("Can't open file");
+    let mut file = File::open(plain).expect("Plaintext file not found!");
     let metadata = file.metadata().expect("Can't read metadata");
     let mut buffer: Vec<u8> = vec![0; metadata.len() as usize];
     file.read(&mut buffer).expect("Can't read file");
@@ -73,98 +73,105 @@ pub fn encrypt(plain: &str, key: &str)
         cipher_text.push(*bytes);
     }
 
-    /*for element in &mut cipher_text
+    for i in 0..cipher_text.len()
     {
-        encrypt_loop(*element, k1, k2); 
+        cipher_text[i] = encrypt_loop(cipher_text[i], k1, k2);
     }
-    */
-    let data = 0b10010111; 
-    encrypt_loop(data, k1, k2);
-    //fs::write("cipher.txt", cipher_text).unwrap();
+
+    fs::write("cipher.txt", cipher_text).unwrap();
+    fs::remove_file(plain).unwrap(); 
+    println!("File has been succesfully encrypted!");
 }
 
-pub fn decrypt()
+pub fn decrypt(cipher: &str, key: &str)
 {
-    
+    let (k1, k2) = generate_keys(key); 
+
+    let mut file = File::open(cipher).expect("Can't open file");
+    let metadata = file.metadata().expect("Can't read metadata");
+    let mut buffer: Vec<u8> = vec![0; metadata.len() as usize];
+    file.read(&mut buffer).expect("Can't read file");
+    let mut plain_text: Vec<u8> = Vec::new();
+    for bytes in &buffer
+    {
+        plain_text.push(*bytes);
+    }
+
+    for i in 0..plain_text.len()
+    {
+        plain_text[i] = decrypt_loop(plain_text[i], k1, k2);
+    }
+
+    fs::write("plain.txt", plain_text).unwrap();
+    fs::remove_file(cipher).unwrap(); 
+    println!("File has been succesfully decrypted!");
 }
 
-fn encrypt_loop(data: u8, k1: u8, k2: u8)
+fn encrypt_loop(data: u8, k1: u8, k2: u8) -> u8
 {
-    //let permuted = permute(data, &IP, IP.len()) as u8;
+    let permuted = permute(data, &IP, IP.len()) as u8;
 
-    //let left = (permuted >> 4) & 0b00001111; 
-    //let right = permuted & 0b00001111;
-
-    let left: u8 = 0b0101;
-    let right: u8 = 0b1101;
-
+    let left = (permuted >> 4) & 0b00001111; 
+    let right = permuted & 0b00001111;
     let expright = permute(right, &EP, EP.len()) as u8;
 
     let intermediate = sbox(expright, k1, left, right);
 
     let left = (intermediate >> 4) & 0b00001111;
     let right = intermediate & 0b00001111;
-
-    println!("Left: {:08b}", left); 
-    println!("Right: {:08b}", right);
-
     let expright = permute(right, &EP, EP.len()) as u8;
 
     let intermediate = sbox(expright, k2, left, right);
 
     let preinverse = (intermediate >> 4) | ((intermediate << 4) & 0b11110000);
     let ciphertext = permute(preinverse, &INVIP, INVIP.len()) as u8;
-    println!("Final ciphertext: {:08b}", ciphertext); 
-        /*
+    
+    return ciphertext; 
+}
 
-    S-boxes?
+fn decrypt_loop(data: u8, k1: u8, k2: u8) -> u8
+{
+    let permuted = permute(data, &IP, IP.len()) as u8;
 
-    another permutation on a 4 bit input
+    let left = (permuted >> 4) & 0b00001111; 
+    let right = permuted & 0b00001111;
+    let expright = permute(right, &EP, EP.len()) as u8;
 
-    swap the position of the groups of 4 bits
+    let intermediate = sbox(expright, k2, left, right);
 
-    inverse of IP
+    let left = (intermediate >> 4) & 0b00001111;
+    let right = intermediate & 0b00001111;
+    let expright = permute(right, &EP, EP.len()) as u8;
 
-    */
+    let intermediate = sbox(expright, k1, left, right);
+
+    let preinverse = (intermediate >> 4) | ((intermediate << 4) & 0b11110000);
+    let plaintext = permute(preinverse, &INVIP, INVIP.len()) as u8;
+    
+    return plaintext; 
 }
 
 fn sbox(data: u8, key: u8, left: u8, right: u8) -> u8
 {
-    let XORright = key ^ data; 
+    let xorright = key ^ data; 
 
-    println!("After XOR with key: {:08b}", XORright);
+    let xorleft = (xorright >> 4) & 0b00001111; 
+    let xorright = xorright & 0b00001111;
 
-    let XORleft = (XORright >> 4) & 0b00001111; 
-    let XORright = XORright & 0b00001111;
+    let lrow = (((xorleft >> 2) & 0b00000010) | (xorleft & 0b00000001)) & 0b000000011;
+    let lcol = (((xorleft >> 1) & 0b00000010) | ((xorleft >> 1) & 0b00000001)) & 0b000000011;
 
-    println!("XORleft: {:08b}", XORleft);
-    println!("XORright: {:08b}", XORright);
-
-    let lrow = (((XORleft >> 2) & 0b00000010) | (XORleft & 0b00000001)) & 0b000000011;
-    let lcol = (((XORleft >> 1) & 0b00000010) | ((XORleft >> 1) & 0b00000001)) & 0b000000011;
-
-    let rrow = (((XORright >> 2) & 0b00000010) | (XORright & 0b00000001)) & 0b000000011;
-    let rcol = (((XORright >> 1) & 0b00000010) | ((XORright >> 1) & 0b00000001)) & 0b000000011;
-
-    println!("lrow: {:04b}", lrow);
-    println!("lcol: {:04b}", lcol);
-    println!("rrow: {:04b}", rrow);
-    println!("rcol: {:04b}", rcol);
+    let rrow = (((xorright >> 2) & 0b00000010) | (xorright & 0b00000001)) & 0b000000011;
+    let rcol = (((xorright >> 1) & 0b00000010) | ((xorright >> 1) & 0b00000001)) & 0b000000011;
 
     let s0val = S0[(lcol + 4 * lrow) as usize]; 
     let s1val = S1[(rcol + 4 * rrow) as usize]; 
     let sval = (s0val << 2 | s1val) & 0b00001111; 
 
-    println!("s0val: {}", s0val);
-    println!("s1val: {}", s1val);
-    println!("After SBoxes: {:08b}", sval); 
-
     let permsval = permute(sval, &P4, P4.len()) as u8;
     let xor2 = left ^ permsval;
     
     let fin = (right << 4) | xor2;
-
-    println!("Final value from sbox: {:08b}", fin); 
 
     return fin;
 }
