@@ -1,23 +1,16 @@
 mod functions; 
 
 use std::io; 
-use std::io::Read;
 use std::io::Write;
 use std::path::Path;
 use functions::encrypt;
 use functions::decrypt;
 fn main() {
 
-    /*
-    Loop beginning until done
-    Ask if user wants to encrypt or decrypt
-    Ask user where file holding key is
-    pull key from file FUNCTION
-    begin encryption/decryption process FUNCTION
-    message that action has been taken and where to find new file. END LOOP
-     */
+    //Main loop that lets you do things multiple times
     loop
     {
+        //get the user input depending on what they want to do, switch to different cases depending on the input
         let mut response = String::new();
         println!("Would you like to encrypt or decrypt?");
         println!("1. Encrypt");
@@ -31,10 +24,12 @@ fn main() {
         {
             let mut key = String::new();
 
+            //Double check the name they input actually exists, keep getting input until it finds a file
             loop 
             {
                 println!("What is the name of the file holding the 10 bit encryption key?");
                 io::stdout().flush().unwrap();
+                key.clear();
                 io::stdin().read_line(&mut key).unwrap();
 
                 let key = key.trim();
@@ -51,10 +46,12 @@ fn main() {
 
             let mut path = String::new();
 
+            //Do the same for the name of the file to actually be encrypted
             loop 
             {
                 println!("What is the name of the file to be encrypted?");
                 io::stdout().flush().unwrap();
+                path.clear();
                 io::stdin().read_line(&mut path).unwrap();
 
                 let path = path.trim();
@@ -68,6 +65,8 @@ fn main() {
                     println!("File not found! Try again!");
                 }
             }
+
+            //Call encryption function
             encrypt(&path.trim(), &key.trim());
         }
 
@@ -80,6 +79,7 @@ fn main() {
             {
                 println!("What is the name of the file holding the 10 bit decryption key?");
                 io::stdout().flush().unwrap();
+                key.clear();
                 io::stdin().read_line(&mut key).unwrap();
 
                 let key = key.trim();
@@ -100,6 +100,7 @@ fn main() {
             {
                 println!("What is the name of the file to be decrypted?");
                 io::stdout().flush().unwrap();
+                path.clear();
                 io::stdin().read_line(&mut path).unwrap();
 
                 let path = path.trim();
@@ -113,14 +114,18 @@ fn main() {
                     println!("File not found! Try again!");
                 }
             }
+
+            //Same as encryption function, verify input then call main function
             decrypt(&path.trim(), &key.trim());
         }
 
+        //If they want to quit, quit
         else if response.trim() == "3"
         {
             break;
         }
 
+        //invalid input, repeat loop
         else
         {
             println!("Invalid Response!");
